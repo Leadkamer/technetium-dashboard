@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technetium - Leadgen Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#64748b;
+  --dim:#94a3b8;
+  --brand:#0b5e8e;
+  --brand-hover:#094c74;
+  --brand-soft:#e6f1f8;
+  --ok:#047857;
+  --ok-soft:#ecfdf5;
+  --warn:#b45309;
+  --warn-soft:#fffbeb;
+  --danger:#b91c1c;
+  --danger-soft:#fef2f2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.loader{display:flex;justify-content:center;align-items:center;height:100vh}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{width:32px;height:32px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;letter-spacing:-0.02em}
+.title{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.subtitle{font-size:12px;color:var(--muted);font-weight:400}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-indicator{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;background:var(--ok-soft);border-radius:20px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.2)}
+.live-text{font-size:12px;font-weight:500;color:#166534;font-family:'DM Mono',monospace}
+.refresh-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.refresh-btn:hover{background:#f1f5f9;color:var(--text)}
+.sync-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace}
+.sync-ok{background:var(--ok-soft);color:#166534}
+.sync-off{background:#f1f5f9;color:#475569}
+.sync-err{background:var(--danger-soft);color:#991b1b}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 24px;background:var(--card);border-bottom:1px solid var(--border)}
+.stat{padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;animation:fadeIn .4s ease both}
+.stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)}
+.stat-nieuw .stat-value{color:var(--brand)}
+.stat-verzenden .stat-value{color:var(--warn)}
+.stat-afgewezen .stat-value{color:var(--danger)}
+.toolbar{display:flex;gap:10px;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.filter-group{display:flex;gap:4px;flex-wrap:wrap}
+.filter-btn{padding:7px 14px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--muted);cursor:pointer;transition:all .15s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.filter-btn:hover{background:#f1f5f9}
+.filter-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.filter-btn .count{font-family:'DM Mono',monospace;font-size:11px;opacity:.75}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px;margin-left:auto}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none}
+.search-input{width:100%;padding:8px 12px 8px 32px;font-size:13px;border:1px solid var(--border);border-radius:6px;font-family:inherit;color:var(--text);background:#f8fafc;outline:none}
+.search-input:focus{border-color:var(--brand);background:#fff}
+.content{padding:16px 24px 40px}
+.list{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.03)}
+.list-header{display:grid;grid-template-columns:110px 1.6fr 2.2fr 1.4fr 1fr 130px 160px;gap:12px;padding:10px 16px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);background:#fafbfc}
+.lead-row{display:grid;grid-template-columns:110px 1.6fr 2.2fr 1.4fr 1fr 130px 160px;gap:12px;padding:12px 16px;border-bottom:1px solid #f1f5f9;align-items:center;font-size:13px;animation:fadeIn .3s ease both;transition:background .12s}
+.lead-row:hover{background:#f8fafc}
+.lead-row:last-child{border-bottom:none}
+.date-mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.name{font-weight:600;color:var(--text)}
+.headline{color:var(--muted);font-size:12px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.city{color:var(--muted);font-size:12px}
+.bron{color:var(--dim);font-size:11px;font-family:'DM Mono',monospace}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap;font-family:'DM Mono',monospace}
+.st-nieuw{background:var(--brand-soft);color:var(--brand)}
+.st-verzenden{background:var(--warn-soft);color:var(--warn)}
+.st-afgewezen{background:var(--danger-soft);color:var(--danger)}
+.row-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.btn{padding:6px 11px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid transparent;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.btn-confirm{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-confirm:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn-reject{background:#fff;color:var(--danger);border-color:var(--border)}
+.btn-reject:hover{background:var(--danger-soft);border-color:var(--danger)}
+.btn-reset{background:#fff;color:var(--muted);border-color:var(--border);padding:4px 10px;font-size:11px;font-weight:500}
+.btn-reset:hover{background:#f1f5f9;color:var(--text)}
+.btn-link{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;font-size:11px;font-weight:500;color:var(--brand);background:var(--brand-soft);border-radius:5px;text-decoration:none}
+.btn-link:hover{background:#d0e5f1}
+.empty-state{padding:60px 20px;text-align:center;color:var(--dim)}
+.empty-state h3{font-size:15px;color:var(--text);margin-bottom:6px}
+.empty-state p{font-size:13px}
+.footer{padding:12px 24px;font-size:11px;color:var(--dim);text-align:right;font-family:'DM Mono',monospace}
+.card-view{display:none}
+.busy{opacity:.5;pointer-events:none}
+@media(max-width:900px){
+  .stats{grid-template-columns:repeat(2,1fr);padding:12px 16px}
+  .header,.toolbar{padding-left:16px;padding-right:16px}
+  .content{padding:12px 12px 60px}
+  .search-wrap{max-width:none;margin-left:0;width:100%}
+  .toolbar{gap:8px}
+  .list{background:transparent;border:none;box-shadow:none}
+  .list-header{display:none}
+  .lead-row{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+  .card-view{display:block}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+  .card-name-block{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+  .card-name{font-weight:700;font-size:15px}
+  .card-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)}
+  .card-headline{font-size:13px;color:var(--muted);margin:4px 0 10px;line-height:1.4}
+  .card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;font-size:11px}
+  .card-meta-item{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#f1f5f9;border-radius:5px;color:var(--muted);font-family:'DM Mono',monospace}
+  .card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .card-actions .btn{justify-content:center;padding:10px;font-size:13px}
+  .card-actions .btn-link{grid-column:1/-1;justify-content:center;padding:8px}
+  .card-actions.single-btn{grid-template-columns:1fr}
+  .header-left{flex:1;min-width:0}
+  .header-right{flex-wrap:wrap;gap:8px}
+  .title{font-size:16px}
+  .subtitle{font-size:11px}
+  .footer{padding:12px 16px;text-align:center}
+}
+@media(max-width:560px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat{padding:10px}
+  .stat-value{font-size:18px}
+  .filter-btn{padding:6px 10px;font-size:11px}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="loader"><div class="spinner"></div></div></div>
+<script>
+var SHEET_ID = '1ptoQQS7TUpxJfK8GoNjrg2T0RB0msQpURiJA9W9sehw';
+var SHEET_NAME = 'Leads';
+var SYNC_URL = '';
+
+var allData = [];
+var statusFilter = 'Nieuw';
+var searchQuery = '';
+var syncState = 'off';
+var busyKeys = {};
+
+function normUrl(u){return String(u||'').toLowerCase().split('?')[0].replace(/\/$/,'').replace(/^https?:\/\//,'').replace(/^(www\.|nl\.|m\.)/,'').trim();}
+function leadKey(l){return normUrl(l['Linkedin URL']||'');}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+
+function handleSheetData(data){
+  try{
+    var cols = data.table.cols.map(function(c){return c.label||''});
+    var rows = data.table.rows;
+    allData = rows.map(function(r){
+      var o={};
+      r.c.forEach(function(cell,i){
+        if(!cols[i])return;
+        var v = cell ? (cell.v==null?'':cell.v) : '';
+        o[cols[i]] = (v instanceof Date) ? v.toISOString().slice(0,10) : String(v);
+      });
+      return o;
+    }).filter(function(r){return r['Linkedin URL'] || r.Voornaam;});
+    allData.sort(function(a,b){
+      var da = (a.Datum||''), db = (b.Datum||'');
+      return da < db ? 1 : da > db ? -1 : 0;
+    });
+    render();
+  }catch(e){
+    document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px"><h3>Fout bij laden</h3><p>'+esc(e.message)+'</p></div>';
+  }
+}
+
+function loadData(){
+  var old = document.getElementById('sheetLoader');
+  if(old) old.remove();
+  var s = document.createElement('script');
+  s.id = 'sheetLoader';
+  s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleSheetData&sheet='+encodeURIComponent(SHEET_NAME)+'&_t='+Date.now();
+  s.onerror = function(){
+    document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px"><h3>Kan data niet laden</h3><p>Zorg dat de sheet gedeeld is met &quot;Iedereen met de link&quot;.</p></div>';
+  };
+  document.body.appendChild(s);
+}
+
+function setStatus(lead, newStatus){
+  var key = leadKey(lead);
+  if(!key) return alert('Geen LinkedIn URL - kan status niet bijwerken.');
+  if(!SYNC_URL){
+    lead.Status = newStatus;
+    render();
+    alert('SYNC_URL niet geconfigureerd. Wijziging alleen lokaal zichtbaar.');
+    return;
+  }
+  busyKeys[key] = true; render();
+  var url = SYNC_URL+'?action=setStatus&url='+encodeURIComponent(lead['Linkedin URL'])+'&status='+encodeURIComponent(newStatus)+'&_t='+Date.now();
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    busyKeys[key] = false;
+    if(d && d.ok){
+      lead.Status = newStatus;
+      syncState = 'ok';
+      render();
+    } else {
+      syncState = 'err'; render();
+      alert('Fout: '+(d && d.error ? d.error : 'onbekend'));
+    }
+  }).catch(function(err){
+    busyKeys[key] = false;
+    syncState = 'err'; render();
+    alert('Netwerkfout: '+err.message);
+  });
+}
+
+function counts(){
+  var c = {Nieuw:0, Verzenden:0, Afgewezen:0, Alle:allData.length};
+  allData.forEach(function(l){ var s=(l.Status||'Nieuw').trim(); if(c[s]!=null) c[s]++; });
+  return c;
+}
+
+function getFiltered(){
+  var items = allData.slice();
+  if(statusFilter !== 'Alle'){
+    items = items.filter(function(l){ return (l.Status||'Nieuw').trim() === statusFilter; });
+  }
+  if(searchQuery){
+    var q = searchQuery.toLowerCase();
+    items = items.filter(function(l){
+      return (l.Voornaam||'').toLowerCase().indexOf(q)>=0
+        || (l.Achternaam||'').toLowerCase().indexOf(q)>=0
+        || (l.Headline||'').toLowerCase().indexOf(q)>=0
+        || (l.Locatie||'').toLowerCase().indexOf(q)>=0;
+    });
+  }
+  return items;
+}
+
+function statusBadge(status){
+  var s = (status||'Nieuw').trim();
+  var cls = s==='Verzenden'?'st-verzenden': s==='Afgewezen'?'st-afgewezen':'st-nieuw';
+  var icon = s==='Verzenden'?'●': s==='Afgewezen'?'✗':'○';
+  return '<span class="status-badge '+cls+'">'+icon+' '+esc(s)+'</span>';
+}
+
+function actionsHtml(lead){
+  var key = leadKey(lead);
+  var status = (lead.Status||'Nieuw').trim();
+  var linkedin = lead['Linkedin URL']||'';
+  var busy = busyKeys[key] ? 'busy' : '';
+  var linkBtn = linkedin ? '<a class="btn-link" href="'+esc(linkedin)+'" target="_blank" rel="noopener">↗ LinkedIn</a>' : '';
+  var actionBtns = '';
+  if(status === 'Nieuw'){
+    actionBtns = '<button class="btn btn-confirm" onclick="confirmLead(\''+esc(key)+'\')">✓ Bevestig</button>'
+               + '<button class="btn btn-reject" onclick="rejectLead(\''+esc(key)+'\')">✗ Afwijzen</button>';
+  } else {
+    actionBtns = '<button class="btn btn-reset" onclick="resetLead(\''+esc(key)+'\')">↺ Terug naar Nieuw</button>';
+  }
+  return '<div class="row-actions '+busy+'">'+linkBtn+actionBtns+'</div>';
+}
+
+function actionsCardHtml(lead){
+  var key = leadKey(lead);
+  var status = (lead.Status||'Nieuw').trim();
+  var linkedin = lead['Linkedin URL']||'';
+  var busy = busyKeys[key] ? 'busy' : '';
+  var linkBtn = linkedin ? '<a class="btn-link" href="'+esc(linkedin)+'" target="_blank" rel="noopener">↗ Open LinkedIn profiel</a>' : '';
+  var actionBtns = '';
+  var cardCls = 'card-actions';
+  if(status === 'Nieuw'){
+    actionBtns = '<button class="btn btn-confirm" onclick="confirmLead(\''+esc(key)+'\')">✓ Bevestig</button>'
+               + '<button class="btn btn-reject" onclick="rejectLead(\''+esc(key)+'\')">✗ Afwijzen</button>';
+  } else {
+    actionBtns = '<button class="btn btn-reset" onclick="resetLead(\''+esc(key)+'\')">↺ Terug naar Nieuw</button>';
+    cardCls += ' single-btn';
+  }
+  return '<div class="'+cardCls+' '+busy+'">'+actionBtns+linkBtn+'</div>';
+}
+
+function findLead(key){
+  for(var i=0;i<allData.length;i++){ if(leadKey(allData[i]) === key) return allData[i]; }
+  return null;
+}
+function confirmLead(key){ var l = findLead(key); if(l) setStatus(l, 'Verzenden'); }
+function rejectLead(key){ var l = findLead(key); if(l) setStatus(l, 'Afgewezen'); }
+function resetLead(key){ var l = findLead(key); if(l) setStatus(l, 'Nieuw'); }
+function setFilter(v){ statusFilter = v; render(); }
+function setSearch(v){ searchQuery = v; render(); }
+
+function render(){
+  var filtered = getFiltered();
+  var c = counts();
+  var app = document.getElementById('app');
+
+  var syncHtml = '';
+  if(SYNC_URL){
+    var scls = syncState==='ok'?'sync-ok':(syncState==='err'?'sync-err':'sync-off');
+    var sico = syncState==='ok'?'●':(syncState==='err'?'!':'…');
+    var slbl = syncState==='ok'?'Sync':(syncState==='err'?'Sync fout':'Gereed');
+    syncHtml = '<span class="sync-badge '+scls+'">'+sico+' '+slbl+'</span>';
+  } else {
+    syncHtml = '<span class="sync-badge sync-off">⚠ Geen sync</span>';
+  }
+
+  var header = '<div class="header">'
+    + '<div class="header-left">'
+    + '<div class="logo">T</div>'
+    + '<div><h1 class="title">Technetium Leadgen</h1><p class="subtitle">Kandidaten bevestigen voor outreach</p></div>'
+    + '</div>'
+    + '<div class="header-right">'
+    + syncHtml
+    + '<button class="refresh-btn" onclick="loadData()">↻ Ververs</button>'
+    + '<div class="live-indicator"><span class="live-dot"></span><span class="live-text">'+allData.length+' leads</span></div>'
+    + '</div>'
+    + '</div>';
+
+  var stats = '<div class="stats">'
+    + '<div class="stat stat-nieuw"><div class="stat-label">Nieuw</div><div class="stat-value">'+c.Nieuw+'</div></div>'
+    + '<div class="stat stat-verzenden"><div class="stat-label">Verzenden</div><div class="stat-value">'+c.Verzenden+'</div></div>'
+    + '<div class="stat stat-afgewezen"><div class="stat-label">Afgewezen</div><div class="stat-value">'+c.Afgewezen+'</div></div>'
+    + '<div class="stat"><div class="stat-label">Totaal</div><div class="stat-value">'+c.Alle+'</div></div>'
+    + '</div>';
+
+  var filters = ['Nieuw','Verzenden','Afgewezen','Alle'];
+  var filterHtml = filters.map(function(f){
+    var active = statusFilter === f ? 'active' : '';
+    return '<button class="filter-btn '+active+'" onclick="setFilter(\''+f+'\')">'+f+' <span class="count">'+(c[f]||0)+'</span></button>';
+  }).join('');
+
+  var toolbar = '<div class="toolbar">'
+    + '<div class="filter-group">'+filterHtml+'</div>'
+    + '<div class="search-wrap">'
+    + '<svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
+    + '<input class="search-input" placeholder="Zoek op naam, headline, locatie..." value="'+esc(searchQuery)+'" oninput="setSearch(this.value)" />'
+    + '</div>'
+    + '</div>';
+
+  var listHtml = '';
+  if(filtered.length === 0){
+    listHtml = '<div class="list"><div class="empty-state"><h3>Geen leads</h3><p>Geen resultaten met huidige filter.</p></div></div>';
+  } else {
+    var rows = '';
+    for(var i=0;i<filtered.length;i++){
+      var lead = filtered[i];
+      var name = esc((lead.Voornaam||'') + ' ' + (lead.Achternaam||'')).trim() || '—';
+      var headline = esc(lead.Headline || '');
+      var city = esc(lead.Locatie || '—');
+      var bron = esc(lead.Bron || '—');
+      var date = esc(lead.Datum || '');
+      var status = statusBadge(lead.Status);
+
+      rows += '<div class="lead-row">'
+        + '<div><span class="date-mono">'+date+'</span></div>'
+        + '<div><div class="name">'+name+'</div></div>'
+        + '<div><div class="headline">'+headline+'</div></div>'
+        + '<div><span class="city">'+city+'</span></div>'
+        + '<div><span class="bron">'+bron+'</span></div>'
+        + '<div>'+status+'</div>'
+        + '<div>'+actionsHtml(lead)+'</div>'
+        + '<div class="card-view">'
+          + '<div class="card-top"><div class="card-name-block"><span class="card-name">'+name+'</span><span class="card-date">'+date+'</span></div>'+status+'</div>'
+          + (headline?'<div class="card-headline">'+headline+'</div>':'')
+          + '<div class="card-meta">'
+          + '<span class="card-meta-item">📍 '+city+'</span>'
+          + '<span class="card-meta-item">⚙ '+bron+'</span>'
+          + '</div>'
+          + actionsCardHtml(lead)
+        + '</div>'
+        + '</div>';
+    }
+    listHtml = '<div class="list">'
+      + '<div class="list-header">'
+      + '<div>Datum</div><div>Naam</div><div>Headline</div><div>Locatie</div><div>Bron</div><div>Status</div><div style="text-align:right">Acties</div>'
+      + '</div>'
+      + rows
+      + '</div>';
+  }
+
+  app.innerHTML = header + stats + toolbar
+    + '<div class="content">' + listHtml + '</div>'
+    + '<div class="footer">'+filtered.length+' van '+allData.length+' weergegeven</div>';
+}
+
+loadData();
+setInterval(loadData, 2*60*1000);
+</script>
+</body>
+</html>
