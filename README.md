@@ -5,8 +5,8 @@ Dashboard voor Jurgen om ROC-kandidaten uit de n8n-pipeline te bekijken en te be
 ## Werking
 
 - **Bron**: Google Sheet `Technetium Leadgeneratie Apollo`, tab `Leads`
-- **Lezen**: via Google Sheets `gviz`-API (sheet moet gedeeld zijn als "Iedereen met link - Lezer")
-- **Schrijven**: via Google Apps Script Web App — `Status` kolom updaten (`Nieuw` → `Verzenden` / `Afgewezen`)
+- **Lezen**: via Google Sheets `gviz`-API (sheet moet gedeeld zijn als "Iedereen met link — Lezer")
+- **Schrijven**: via n8n webhook → `Status` kolom updaten (`Nieuw` → `Verzenden` / `Afgewezen`)
 
 ## Statussen
 
@@ -16,39 +16,38 @@ Dashboard voor Jurgen om ROC-kandidaten uit de n8n-pipeline te bekijken en te be
 | `Verzenden` | Jurgen bevestigt → AI Leadgen workflow pakt hem op voor connectie + bericht |
 | `Afgewezen` | Niet geschikt — blijft in sheet, wordt overgeslagen door outreach |
 
+## Architectuur
+
+```
+[Dashboard index.html] --fetch--> [n8n webhook] --> [Google Sheets node] --> Sheet (Status kolom)
+       |
+       +--gviz API--> Sheet (read-only)
+```
+
+- **Webhook workflow**: `Technetium - Dashboard Status Webhook` (n8n ID `vVYitD9cB1IgDjuq`)
+- **Endpoint**: `https://leadkamer.app.n8n.cloud/webhook/technetium-status?url={linkedin_url}&status={status}`
+- **CORS**: open (`*`) — dashboard kan vanaf elk domein posten
+
 ## Deploy
 
-### 1. Apps Script endpoint
+### Sheet delen
+Google Sheet → Share → **Iedereen met link — Lezer**. (Write gaat via n8n workflow, niet via sheet-permissions.)
 
-1. Open https://script.google.com → New project
-2. Plak inhoud van `apps-script.gs`
-3. Deploy → New deployment → Type: Web app
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-4. Kopieer de Web App URL (eindigt op `/exec`)
-5. Plak die URL in `index.html` bij `SYNC_URL = ''`
+### n8n workflow activeren
+Open https://leadkamer.app.n8n.cloud/workflow/vVYitD9cB1IgDjuq → zet op **Active**.
 
-### 2. Sheet delen
-
-Google Sheet → Share → Algemene toegang: **Iedereen met link — Viewer**
-(Write-access gebeurt via Apps Script, niet direct via sheet-permissies.)
-
-### 3. Dashboard deployen
-
-Vercel (zoals smartesg-dashboard):
-
+### Dashboard deployen
+Vercel:
 ```
 cd technetium-dashboard
 vercel --prod
 ```
-
-Of GitHub Pages — commit + push naar `main`, Pages activeren op `/`.
+Of GitHub Pages (commit + push `main`, Pages aan op `/`).
 
 ## Lokaal testen
-
-Open `index.html` direct in browser. Data laadt via `gviz` (publieke sheet). Status-updates werken alleen als `SYNC_URL` is ingesteld.
+Open `index.html` direct in browser. Data laadt via gviz. Status-updates gaan via de n8n webhook (die moet actief zijn).
 
 ## Bestanden
-
-- `index.html` — UI (single file, inline CSS + JS)
-- `apps-script.gs` — backend voor status sync
+- `index.html` — single-file UI (inline CSS + JS)
+- `apps-script.gs` — **niet gebruikt**, bewaard als alternatief indien n8n webhook ooit vervangen wordt
+- `.gitignore`

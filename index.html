@@ -137,7 +137,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <script>
 var SHEET_ID = '1ptoQQS7TUpxJfK8GoNjrg2T0RB0msQpURiJA9W9sehw';
 var SHEET_NAME = 'Leads';
-var SYNC_URL = '';
+var SYNC_URL = 'https://leadkamer.app.n8n.cloud/webhook/technetium-status';
 
 var allData = [];
 var statusFilter = 'Nieuw';
@@ -194,7 +194,7 @@ function setStatus(lead, newStatus){
     return;
   }
   busyKeys[key] = true; render();
-  var url = SYNC_URL+'?action=setStatus&url='+encodeURIComponent(lead['Linkedin URL'])+'&status='+encodeURIComponent(newStatus)+'&_t='+Date.now();
+  var url = SYNC_URL+'?url='+encodeURIComponent(lead['Linkedin URL'])+'&status='+encodeURIComponent(newStatus)+'&_t='+Date.now();
   fetch(url).then(function(r){return r.json();}).then(function(d){
     busyKeys[key] = false;
     if(d && d.ok){
