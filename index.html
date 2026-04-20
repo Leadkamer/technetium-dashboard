@@ -233,7 +233,7 @@ function loadData(){
   document.body.appendChild(s);
 }
 
-var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2','Email Onderwerp','Email Body'];
+var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2'];
 
 function collectEdits(){
   var edits = {};
@@ -369,20 +369,10 @@ function renderPanel(lead){
     return '<div class="panel-section"><div class="panel-section-title">'+title+'</div><div class="message-box">'+esc(value)+'</div></div>';
   }
 
-  var emailSection = '';
-  if(editable){
-    emailSection = section('Email onderwerp', 'Email Onderwerp', lead['Email Onderwerp']||'', true)
-      + section('Email body', 'Email Body', lead['Email Body']||'', true);
-  } else if(lead['Email Onderwerp'] || lead['Email Body']){
-    var emailContent = (lead['Email Onderwerp'] ? '<strong>'+esc(lead['Email Onderwerp'])+'</strong>\n\n' : '') + esc(lead['Email Body']||'');
-    emailSection = '<div class="panel-section"><div class="panel-section-title">Email</div><div class="message-box">'+emailContent+'</div></div>';
-  }
-
   var messagesHtml = ''
     + section('Connectie notitie', 'Connectie Notitie', lead['Connectie Notitie'], true)
     + section('Follow-up bericht 1', 'Follow-up Bericht', lead['Follow-up Bericht'], true)
     + section('Follow-up bericht 2 (nudge)', 'Follow-up Bericht 2', lead['Follow-up Bericht 2'], true)
-    + emailSection
     + readonlySection('AI Redenering', lead['Redenering'])
     + readonlySection('Pijnpunt', lead['Pijnpunt']);
 
