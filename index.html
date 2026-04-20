@@ -259,10 +259,11 @@ function setStatus(lead, newStatus, includeEdits){
     for (var f in edits){ if (edits.hasOwnProperty(f)) body[f] = edits[f]; }
   }
   busyKeys[key] = true; render();
+  var form = new URLSearchParams();
+  for (var k in body){ if (body.hasOwnProperty(k)) form.append(k, body[k] == null ? '' : String(body[k])); }
   fetch(SYNC_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: form
   }).then(function(r){return r.json();}).then(function(d){
     busyKeys[key] = false;
     if(d && d.ok){
