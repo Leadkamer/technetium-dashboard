@@ -111,6 +111,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .panel-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .message-box{padding:14px 16px;background:#f8fafc;border-radius:8px;font-size:13px;line-height:1.55;color:var(--text);border:1px solid var(--border);white-space:pre-wrap;word-break:break-word}
 .message-box.empty{color:var(--dim);font-style:italic}
+textarea.message-box{width:100%;font-family:inherit;font-size:13px;line-height:1.55;resize:vertical;min-height:72px;display:block;outline:none;transition:border-color .15s,background .15s}
+textarea.message-box:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(11,94,142,.08)}
+.edit-hint{font-size:10px;color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
 .panel-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--brand);text-decoration:none;padding:8px 12px;background:var(--brand-soft);border-radius:6px;font-weight:500}
 .panel-link:hover{background:#d0e5f1}
 .panel-actions{padding:16px 24px;border-top:1px solid var(--border);background:#fff;position:sticky;bottom:0;display:grid;gap:8px}
@@ -230,7 +233,18 @@ function loadData(){
   document.body.appendChild(s);
 }
 
-function setStatus(lead, newStatus){
+var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2','Email Onderwerp','Email Body'];
+
+function collectEdits(){
+  var edits = {};
+  var nodes = document.querySelectorAll('textarea.message-box[data-field]');
+  for (var i = 0; i < nodes.length; i++){
+    edits[nodes[i].dataset.field] = nodes[i].value;
+  }
+  return edits;
+}
+
+function setStatus(lead, newStatus, includeEdits){
   var key = leadKey(lead);
   if(!key) return alert('Geen LinkedIn URL - kan status niet bijwerken.');
   if(!SYNC_URL){
@@ -239,14 +253,28 @@ function setStatus(lead, newStatus){
     alert('SYNC_URL niet geconfigureerd. Wijziging alleen lokaal.');
     return;
   }
+  var body = { url: lead['Linkedin URL'], status: newStatus };
+  if (includeEdits){
+    var edits = collectEdits();
+    for (var f in edits){ if (edits.hasOwnProperty(f)) body[f] = edits[f]; }
+  }
   busyKeys[key] = true; render();
-  var url = SYNC_URL+'?url='+encodeURIComponent(lead['Linkedin URL'])+'&status='+encodeURIComponent(newStatus)+'&_t='+Date.now();
-  fetch(url).then(function(r){return r.json();}).then(function(d){
+  fetch(SYNC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(d){
     busyKeys[key] = false;
     if(d && d.ok){
       lead.Status = newStatus;
+      if (includeEdits){
+        for (var f in body){ if (body.hasOwnProperty(f) && EDITABLE_FIELDS.indexOf(f) !== -1) lead[f] = body[f]; }
+      }
       syncState = 'ok';
-      if(selectedLead && leadKey(selectedLead) === key) selectedLead.Status = newStatus;
+      if(selectedLead && leadKey(selectedLead) === key){
+        selectedLead.Status = newStatus;
+        if (includeEdits){ for (var f2 in body){ if (body.hasOwnProperty(f2) && EDITABLE_FIELDS.indexOf(f2) !== -1) selectedLead[f2] = body[f2]; } }
+      }
       render();
     } else {
       syncState = 'err'; render();
@@ -295,9 +323,9 @@ function findLead(key){
 }
 function openLead(key){ var l=findLead(key); if(l){ selectedLead = l; render(); } }
 function closeLead(){ selectedLead = null; render(); }
-function acceptLead(){ if(selectedLead) setStatus(selectedLead, 'Verzenden'); }
-function rejectLead(){ if(selectedLead) setStatus(selectedLead, 'Afgewezen'); }
-function resetLead(){ if(selectedLead) setStatus(selectedLead, 'Ter Review'); }
+function acceptLead(){ if(selectedLead) setStatus(selectedLead, 'Verzenden', true); }
+function rejectLead(){ if(selectedLead) setStatus(selectedLead, 'Afgewezen', true); }
+function resetLead(){ if(selectedLead) setStatus(selectedLead, 'Ter Review', false); }
 function setFilter(v){ statusFilter = v; render(); }
 function setSearch(v){ searchQuery = v; render(); }
 
@@ -322,27 +350,41 @@ function renderPanel(lead){
     ? '<div class="panel-section"><a class="panel-link" href="'+esc(lead['Linkedin URL'])+'" target="_blank" rel="noopener">↗ Open LinkedIn profiel</a></div>'
     : '';
 
-  function section(title, content, allowEmpty){
-    if(!content && !allowEmpty) return '';
-    var box = content ? '<div class="message-box">'+esc(content)+'</div>' : '<div class="message-box empty">— nog niet gegenereerd —</div>';
-    return '<div class="panel-section"><div class="panel-section-title">'+title+'</div>'+box+'</div>';
+  var editable = status === 'Ter Review';
+  var hint = editable ? '<span class="edit-hint">bewerkbaar</span>' : '';
+
+  function section(title, field, value, allowEmpty){
+    if(!value && !allowEmpty && !editable) return '';
+    var titleHtml = '<div class="panel-section-title">'+title+(editable && field ? hint : '')+'</div>';
+    if(editable && field){
+      var ta = '<textarea class="message-box" data-field="'+esc(field)+'" rows="4" placeholder="— nog niet gegenereerd —">'+esc(value||'')+'</textarea>';
+      return '<div class="panel-section">'+titleHtml+ta+'</div>';
+    }
+    var box = value ? '<div class="message-box">'+esc(value)+'</div>' : '<div class="message-box empty">— nog niet gegenereerd —</div>';
+    return '<div class="panel-section">'+titleHtml+box+'</div>';
   }
 
-  var emailContent = '';
-  if(lead['Email Onderwerp'] || lead['Email Body']){
-    emailContent = (lead['Email Onderwerp'] ? '<strong>'+esc(lead['Email Onderwerp'])+'</strong>\n\n' : '') + esc(lead['Email Body']||'');
+  function readonlySection(title, value){
+    if(!value) return '';
+    return '<div class="panel-section"><div class="panel-section-title">'+title+'</div><div class="message-box">'+esc(value)+'</div></div>';
   }
-  var emailSection = emailContent
-    ? '<div class="panel-section"><div class="panel-section-title">Email</div><div class="message-box">'+emailContent+'</div></div>'
-    : '';
+
+  var emailSection = '';
+  if(editable){
+    emailSection = section('Email onderwerp', 'Email Onderwerp', lead['Email Onderwerp']||'', true)
+      + section('Email body', 'Email Body', lead['Email Body']||'', true);
+  } else if(lead['Email Onderwerp'] || lead['Email Body']){
+    var emailContent = (lead['Email Onderwerp'] ? '<strong>'+esc(lead['Email Onderwerp'])+'</strong>\n\n' : '') + esc(lead['Email Body']||'');
+    emailSection = '<div class="panel-section"><div class="panel-section-title">Email</div><div class="message-box">'+emailContent+'</div></div>';
+  }
 
   var messagesHtml = ''
-    + section('Connectie notitie', lead['Connectie Notitie'], true)
-    + section('Follow-up bericht 1', lead['Follow-up Bericht'], true)
-    + section('Follow-up bericht 2 (nudge)', lead['Follow-up Bericht 2'], true)
+    + section('Connectie notitie', 'Connectie Notitie', lead['Connectie Notitie'], true)
+    + section('Follow-up bericht 1', 'Follow-up Bericht', lead['Follow-up Bericht'], true)
+    + section('Follow-up bericht 2 (nudge)', 'Follow-up Bericht 2', lead['Follow-up Bericht 2'], true)
     + emailSection
-    + section('AI Redenering', lead['Redenering']||'', false)
-    + section('Pijnpunt', lead['Pijnpunt']||'', false);
+    + readonlySection('AI Redenering', lead['Redenering'])
+    + readonlySection('Pijnpunt', lead['Pijnpunt']);
 
   var actionsHtml = '';
   if(status === 'Ter Review'){
