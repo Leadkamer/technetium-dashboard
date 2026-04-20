@@ -130,7 +130,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 }
 @media(max-width:900px){
   .stats{grid-template-columns:repeat(2,1fr);padding:12px 16px}
-  .header,.toolbar{padding-left:16px;padding-right:16px}
+  .header{padding:12px 16px;flex-wrap:nowrap;gap:10px;align-items:center}
+  .toolbar{padding-left:16px;padding-right:16px}
   .content{padding:12px 12px 60px}
   .search-wrap{max-width:none;margin-left:0;width:100%}
   .toolbar{gap:8px}
@@ -145,10 +146,15 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .card-headline{font-size:13px;color:var(--muted);margin:4px 0 10px;line-height:1.4}
   .card-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
   .card-meta-item{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#f1f5f9;border-radius:5px;color:var(--muted);font-family:'DM Mono',monospace}
-  .header-left{flex:1;min-width:0}
-  .header-right{flex-wrap:wrap;gap:8px}
-  .title{font-size:16px}
-  .subtitle{font-size:11px}
+  .header-left{flex:1;min-width:0;align-items:center}
+  .header-right{gap:6px;flex-shrink:0;flex-wrap:nowrap}
+  .logo{width:28px;height:28px;font-size:13px;flex-shrink:0}
+  .title{font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .subtitle{display:none}
+  .refresh-btn{padding:6px 9px;font-size:11px}
+  .sync-badge{padding:3px 8px;font-size:10px}
+  .live-indicator{padding:4px 10px}
+  .live-text{font-size:11px}
   .footer{padding:12px 16px;text-align:center}
   .panel{width:100%;max-width:100%}
   .overlay.open{display:block}
@@ -162,6 +168,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .panel-header{padding:18px 16px 14px}
   .panel-body{padding:16px}
   .panel-actions{padding:14px 16px}
+  .sync-badge{display:none}
+  .refresh-btn{padding:6px 8px;font-size:0;width:34px;height:30px;position:relative}
+  .refresh-btn::before{content:'↻';font-size:14px;color:var(--muted);position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .live-indicator{padding:4px 9px}
+  .live-text{font-size:10px}
+  .title{font-size:14px}
 }
 </style>
 </head>
