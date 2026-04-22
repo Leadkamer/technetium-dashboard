@@ -24,6 +24,8 @@
   --warn-soft:#fffbeb;
   --danger:#b91c1c;
   --danger-soft:#fef2f2;
+  --info:#1d4ed8;
+  --info-soft:#eff6ff;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
@@ -51,13 +53,14 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .sync-ok{background:var(--ok-soft);color:#166534}
 .sync-off{background:#f1f5f9;color:#475569}
 .sync-err{background:var(--danger-soft);color:#991b1b}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:16px 24px;background:var(--card);border-bottom:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:16px 24px;background:var(--card);border-bottom:1px solid var(--border)}
 .stat{padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;animation:fadeIn .4s ease both}
 .stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
 .stat-value{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)}
 .stat-nieuw .stat-value{color:var(--muted)}
 .stat-review .stat-value{color:var(--review)}
 .stat-verzenden .stat-value{color:var(--warn)}
+.stat-verzonden .stat-value{color:var(--info)}
 .stat-afgewezen .stat-value{color:var(--danger)}
 .toolbar{display:flex;gap:10px;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
 .filter-group{display:flex;gap:4px;flex-wrap:wrap}
@@ -84,6 +87,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .st-nieuw{background:#f1f5f9;color:var(--muted)}
 .st-review{background:var(--review-soft);color:var(--review)}
 .st-verzenden{background:var(--warn-soft);color:var(--warn)}
+.st-verzonden{background:var(--info-soft);color:var(--info)}
 .st-afgewezen{background:var(--danger-soft);color:var(--danger)}
 .empty-state{padding:60px 20px;text-align:center;color:var(--dim)}
 .empty-state h3{font-size:15px;color:var(--text);margin-bottom:6px}
@@ -132,7 +136,7 @@ textarea.message-box.over-limit:focus{box-shadow:0 0 0 3px rgba(185,28,28,.12)}
 .btn-reset:hover{background:#f1f5f9;color:var(--text)}
 .panel-note{padding:12px 16px;background:var(--warn-soft);border:1px solid #fde68a;border-radius:8px;font-size:12px;color:var(--warn);text-align:center;font-weight:500}
 
-@media(max-width:1000px){
+@media(max-width:1100px){
   .stats{grid-template-columns:repeat(3,1fr)}
   .stat-alle{display:none}
 }
@@ -325,7 +329,7 @@ function setStatus(lead, newStatus, includeEdits){
 }
 
 function counts(){
-  var c = {Nieuw:0, 'Ter Review':0, Verzenden:0, Afgewezen:0, Alle:allData.length};
+  var c = {Nieuw:0, 'Ter Review':0, Verzenden:0, Verzonden:0, Afgewezen:0, Alle:allData.length};
   allData.forEach(function(l){ var s=(l.Status||'Nieuw').trim(); if(c[s]!=null) c[s]++; });
   return c;
 }
@@ -349,8 +353,8 @@ function getFiltered(){
 
 function statusBadge(status){
   var s = (status||'Nieuw').trim();
-  var cls = s==='Ter Review'?'st-review': s==='Verzenden'?'st-verzenden': s==='Afgewezen'?'st-afgewezen':'st-nieuw';
-  var icon = s==='Ter Review'?'◐': s==='Verzenden'?'●': s==='Afgewezen'?'✗':'○';
+  var cls = s==='Ter Review'?'st-review': s==='Verzenden'?'st-verzenden': s==='Verzonden'?'st-verzonden': s==='Afgewezen'?'st-afgewezen':'st-nieuw';
+  var icon = s==='Ter Review'?'◐': s==='Verzenden'?'●': s==='Verzonden'?'✓': s==='Afgewezen'?'✗':'○';
   return '<span class="status-badge '+cls+'">'+icon+' '+esc(s)+'</span>';
 }
 
@@ -492,11 +496,12 @@ function render(){
     + '<div class="stat stat-nieuw"><div class="stat-label">Nieuw</div><div class="stat-value">'+c.Nieuw+'</div></div>'
     + '<div class="stat stat-review"><div class="stat-label">Ter Review</div><div class="stat-value">'+c['Ter Review']+'</div></div>'
     + '<div class="stat stat-verzenden"><div class="stat-label">Verzenden</div><div class="stat-value">'+c.Verzenden+'</div></div>'
+    + '<div class="stat stat-verzonden"><div class="stat-label">Verzonden</div><div class="stat-value">'+c.Verzonden+'</div></div>'
     + '<div class="stat stat-afgewezen"><div class="stat-label">Afgewezen</div><div class="stat-value">'+c.Afgewezen+'</div></div>'
     + '<div class="stat stat-alle"><div class="stat-label">Totaal</div><div class="stat-value">'+c.Alle+'</div></div>'
     + '</div>';
 
-  var filters = ['Ter Review','Verzenden','Afgewezen','Nieuw','Alle'];
+  var filters = ['Ter Review','Verzenden','Verzonden','Afgewezen','Nieuw','Alle'];
   var filterHtml = filters.map(function(f){
     var active = statusFilter === f ? 'active' : '';
     return '<button class="filter-btn '+active+'" onclick="setFilter(\''+f+'\')">'+f+' <span class="count">'+(c[f]||0)+'</span></button>';
