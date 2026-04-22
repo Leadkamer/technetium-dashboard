@@ -234,14 +234,21 @@ function loadData(){
 }
 
 var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2'];
+var EDITS_STORAGE_KEY = 'technetium_pending_edits_v1';
 var pendingEdits = {};
+try { pendingEdits = JSON.parse(localStorage.getItem(EDITS_STORAGE_KEY) || '{}') || {}; } catch(e) { pendingEdits = {}; }
+
+function savePendingEdits(){
+  try { localStorage.setItem(EDITS_STORAGE_KEY, JSON.stringify(pendingEdits)); } catch(e){}
+}
 
 function trackEdit(key, field, value){
   if (!pendingEdits[key]) pendingEdits[key] = {};
   pendingEdits[key][field] = value;
+  savePendingEdits();
 }
 
-function clearEdits(key){ delete pendingEdits[key]; }
+function clearEdits(key){ delete pendingEdits[key]; savePendingEdits(); }
 
 function getFieldValue(lead, field){
   var k = leadKey(lead);
