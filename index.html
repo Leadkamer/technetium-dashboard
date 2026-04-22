@@ -234,14 +234,24 @@ function loadData(){
 }
 
 var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2'];
+var pendingEdits = {};
 
-function collectEdits(){
-  var edits = {};
-  var nodes = document.querySelectorAll('textarea.message-box[data-field]');
-  for (var i = 0; i < nodes.length; i++){
-    edits[nodes[i].dataset.field] = nodes[i].value;
-  }
-  return edits;
+function trackEdit(key, field, value){
+  if (!pendingEdits[key]) pendingEdits[key] = {};
+  pendingEdits[key][field] = value;
+}
+
+function clearEdits(key){ delete pendingEdits[key]; }
+
+function getFieldValue(lead, field){
+  var k = leadKey(lead);
+  if (pendingEdits[k] && pendingEdits[k][field] !== undefined) return pendingEdits[k][field];
+  return lead[field] || '';
+}
+
+function collectEdits(lead){
+  var k = leadKey(lead);
+  return pendingEdits[k] ? Object.assign({}, pendingEdits[k]) : {};
 }
 
 function setStatus(lead, newStatus, includeEdits){
@@ -255,7 +265,7 @@ function setStatus(lead, newStatus, includeEdits){
   }
   var body = { url: lead['Linkedin URL'], status: newStatus };
   if (includeEdits){
-    var edits = collectEdits();
+    var edits = collectEdits(lead);
     for (var f in edits){ if (edits.hasOwnProperty(f)) body[f] = edits[f]; }
   }
   busyKeys[key] = true; render();
@@ -270,6 +280,7 @@ function setStatus(lead, newStatus, includeEdits){
       lead.Status = newStatus;
       if (includeEdits){
         for (var f in body){ if (body.hasOwnProperty(f) && EDITABLE_FIELDS.indexOf(f) !== -1) lead[f] = body[f]; }
+        clearEdits(key);
       }
       syncState = 'ok';
       if(selectedLead && leadKey(selectedLead) === key){
@@ -358,7 +369,8 @@ function renderPanel(lead){
     if(!value && !allowEmpty && !editable) return '';
     var titleHtml = '<div class="panel-section-title">'+title+(editable && field ? hint : '')+'</div>';
     if(editable && field){
-      var ta = '<textarea class="message-box" data-field="'+esc(field)+'" rows="4" placeholder="— nog niet gegenereerd —">'+esc(value||'')+'</textarea>';
+      var current = getFieldValue(lead, field);
+      var ta = '<textarea class="message-box" data-field="'+esc(field)+'" rows="4" placeholder="— nog niet gegenereerd —" oninput="trackEdit(\''+esc(key)+'\', \''+esc(field)+'\', this.value)">'+esc(current)+'</textarea>';
       return '<div class="panel-section">'+titleHtml+ta+'</div>';
     }
     var box = value ? '<div class="message-box">'+esc(value)+'</div>' : '<div class="message-box empty">— nog niet gegenereerd —</div>';
