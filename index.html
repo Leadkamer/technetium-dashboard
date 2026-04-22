@@ -497,7 +497,7 @@ function render(){
 }
 
 loadData();
-setInterval(loadData, 2*60*1000);
+setInterval(function(){ if (!selectedLead) loadData(); }, 2*60*1000);
 </script>
 </body>
 </html>
