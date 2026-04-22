@@ -363,6 +363,11 @@ function closeLead(){ selectedLead = null; render(); }
 function acceptLead(){ if(selectedLead) setStatus(selectedLead, 'Verzenden', true); }
 function rejectLead(){ if(selectedLead) setStatus(selectedLead, 'Afgewezen', true); }
 function resetLead(){ if(selectedLead) setStatus(selectedLead, 'Ter Review', false); }
+function saveEditsOnly(){
+  if (!selectedLead) return;
+  var s = (selectedLead.Status || 'Nieuw').trim();
+  setStatus(selectedLead, s, true);
+}
 function setFilter(v){ statusFilter = v; render(); }
 function setSearch(v){ searchQuery = v; render(); }
 
@@ -387,7 +392,7 @@ function renderPanel(lead){
     ? '<div class="panel-section"><a class="panel-link" href="'+esc(lead['Linkedin URL'])+'" target="_blank" rel="noopener">↗ Open LinkedIn profiel</a></div>'
     : '';
 
-  var editable = status === 'Ter Review';
+  var editable = status === 'Ter Review' || status === 'Verzenden';
   var hint = editable ? '<span class="edit-hint">bewerkbaar</span>' : '';
 
   function section(title, field, value, allowEmpty){
@@ -429,7 +434,12 @@ function renderPanel(lead){
       + '<button class="btn btn-reject" onclick="rejectLead()">✗ Afwijzen</button>'
       + '<button class="btn btn-accept" onclick="acceptLead()">✓ Accepteer → Verzenden</button>'
       + '</div>';
-  } else if(status === 'Verzenden' || status === 'Afgewezen'){
+  } else if(status === 'Verzenden'){
+    actionsHtml = '<div class="panel-actions two-btn '+busy+'">'
+      + '<button class="btn btn-reset" onclick="resetLead()">↺ Terug naar Ter Review</button>'
+      + '<button class="btn btn-accept" onclick="saveEditsOnly()">💾 Opslaan wijzigingen</button>'
+      + '</div>';
+  } else if(status === 'Afgewezen'){
     actionsHtml = '<div class="panel-actions '+busy+'">'
       + '<button class="btn btn-reset" onclick="resetLead()">↺ Terug naar Ter Review</button>'
       + '</div>';
