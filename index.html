@@ -113,7 +113,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .message-box.empty{color:var(--dim);font-style:italic}
 textarea.message-box{width:100%;font-family:inherit;font-size:13px;line-height:1.55;resize:vertical;min-height:72px;display:block;outline:none;transition:border-color .15s,background .15s}
 textarea.message-box:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(11,94,142,.08)}
+textarea.message-box.over-limit{border-color:var(--danger);background:#fef9f9}
+textarea.message-box.over-limit:focus{box-shadow:0 0 0 3px rgba(185,28,28,.12)}
 .edit-hint{font-size:10px;color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+.char-counter{font-size:11px;color:var(--dim);font-family:'DM Mono',monospace;margin-top:4px;text-align:right;transition:color .15s}
+.char-counter.warn{color:var(--warn)}
+.char-counter.over{color:var(--danger);font-weight:600}
 .panel-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--brand);text-decoration:none;padding:8px 12px;background:var(--brand-soft);border-radius:6px;font-weight:500}
 .panel-link:hover{background:#d0e5f1}
 .panel-actions{padding:16px 24px;border-top:1px solid var(--border);background:#fff;position:sticky;bottom:0;display:grid;gap:8px}
@@ -234,6 +239,19 @@ function loadData(){
 }
 
 var EDITABLE_FIELDS = ['Connectie Notitie','Follow-up Bericht','Follow-up Bericht 2'];
+var FIELD_LIMITS = { 'Connectie Notitie': 300, 'Follow-up Bericht': 1900, 'Follow-up Bericht 2': 1900 };
+
+function updateCounter(counterId, taId, len, limit){
+  var c = document.getElementById(counterId);
+  var ta = document.getElementById(taId);
+  if (c){
+    c.textContent = len + '/' + limit;
+    c.className = 'char-counter' + (len > limit ? ' over' : (len > limit * 0.9 ? ' warn' : ''));
+  }
+  if (ta){
+    if (len > limit) ta.classList.add('over-limit'); else ta.classList.remove('over-limit');
+  }
+}
 var EDITS_STORAGE_KEY = 'technetium_pending_edits_v1';
 var pendingEdits = {};
 try { pendingEdits = JSON.parse(localStorage.getItem(EDITS_STORAGE_KEY) || '{}') || {}; } catch(e) { pendingEdits = {}; }
@@ -377,8 +395,17 @@ function renderPanel(lead){
     var titleHtml = '<div class="panel-section-title">'+title+(editable && field ? hint : '')+'</div>';
     if(editable && field){
       var current = getFieldValue(lead, field);
-      var ta = '<textarea class="message-box" data-field="'+esc(field)+'" rows="4" placeholder="— nog niet gegenereerd —" oninput="trackEdit(\''+esc(key)+'\', \''+esc(field)+'\', this.value)">'+esc(current)+'</textarea>';
-      return '<div class="panel-section">'+titleHtml+ta+'</div>';
+      var limit = FIELD_LIMITS[field] || 0;
+      var slug = field.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+      var taId = 'ta-' + slug;
+      var counterId = 'cnt-' + slug;
+      var overCls = limit && current.length > limit ? ' over-limit' : '';
+      var counterCls = 'char-counter' + (limit && current.length > limit ? ' over' : (limit && current.length > limit * 0.9 ? ' warn' : ''));
+      var oninput = 'trackEdit(\''+esc(key)+'\', \''+esc(field)+'\', this.value)' +
+                    (limit ? '; updateCounter(\''+counterId+'\', \''+taId+'\', this.value.length, '+limit+')' : '');
+      var ta = '<textarea id="'+taId+'" class="message-box'+overCls+'" data-field="'+esc(field)+'" rows="4" placeholder="— nog niet gegenereerd —" oninput="'+oninput+'">'+esc(current)+'</textarea>';
+      var counter = limit ? '<div id="'+counterId+'" class="'+counterCls+'">'+current.length+'/'+limit+'</div>' : '';
+      return '<div class="panel-section">'+titleHtml+ta+counter+'</div>';
     }
     var box = value ? '<div class="message-box">'+esc(value)+'</div>' : '<div class="message-box empty">— nog niet gegenereerd —</div>';
     return '<div class="panel-section">'+titleHtml+box+'</div>';
